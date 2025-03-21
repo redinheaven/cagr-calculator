@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAGR 计算器</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* 移除数字输入框的上下箭头 */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div id="root" class="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4"></div>
+
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const CAGRCalculator = () => {
+      // 使用 React.useState 和 React.useEffect
+      const [initialInvestment, setInitialInvestment] = React.useState('');
+      const [finalValue, setFinalValue] = React.useState('');
+      const [years, setYears] = React.useState('');
+      const [cagr, setCagr] = React.useState('');
+      const [targetVariable, setTargetVariable] = React.useState('cagr');
+      const [result, setResult] = React.useState(null);
+      const [error, setError] = React.useState('');
+
+      const calculateCAGR = () => {
+        setError('');
+        setResult(null);
+
+        // 将输入转换为数字
+        const initial = parseFloat(initialInvestment);
+        const final = parseFloat(finalValue);
+        const period = parseFloat(years);
+        const rate = parseFloat(cagr) / 100; // 将百分比转换为小数
+
+        try {
+          if (targetVariable === 'cagr') {
+            if (!initialInvestment || !finalValue || !years) {
+              throw new Error('请填写所有必填字段');
+            }
+            if (initial <= 0 || final <= 0 || period <= 0) {
+              throw new Error('数值必须为正数');
+            }
+
+            // 计算 CAGR
+            const calculatedCAGR = (Math.pow(final / initial, 1 / period) - 1) * 100;
+            setResult({
+              label: 'CAGR',
+              value: calculatedCAGR.toFixed(2) + '%',
+              explanation: `复合年增长率为 ${calculatedCAGR.toFixed(2)}%`
+            });
+          }
+          else if (targetVariable === 'initialInvestment') {
+            if (!finalValue || !years || !cagr) {
+              throw new Error('请填写所有必填字段');
+            }
+            if (final <= 0 || period <= 0 || rate <= -1) {
+              throw new Error('数值必须为有效数字');
+            }
+
+            // 计算初始投资
+            const calculatedInitial = final / Math.pow(1 + rate, period);
+            setResult({
+              label: '初始投资',
+              value: '¥' + calculatedInitial.toFixed(2),
+              explanation: `初始投资金额为 ¥${calculatedInitial.toFixed(2)}`
+            });
+          }
+          else if (targetVariable === 'finalValue') {
+            if (!initialInvestment || !years || !cagr) {
+              throw new Error('请填写所有必填字段');
+            }
+            if (initial <= 0 || period <= 0 || rate <= -1) {
+              throw new Error('数值必须为有效数字');
+            }
+
+            // 计算最终价值
+            const calculatedFinal = initial * Math.pow(1 + rate, period);
+            setResult({
+              label: '最终价值',
+              value: '¥' + calculatedFinal.toFixed(2),
+              explanation: `最终价值为 ¥${calculatedFinal.toFixed(2)}`
+            });
+          }
+          else if (targetVariable === 'years') {
+            if (!initialInvestment || !finalValue || !cagr) {
+              throw new Error('请填写所有必填字段');
+            }
+            if (initial <= 0 || final <= 0 || rate === 0) {
+              throw new Error('数值必须为有效数字且 CAGR 不能为 0%');
+            }
+
+            // 计算年数
+            const calculatedYears = Math.log(final / initial) / Math.log(1 + rate);
+            setResult({
+              label: '投资期限',
+              value: calculatedYears.toFixed(2) + ' 年',
+              explanation: `投资期限为 ${calculatedYears.toFixed(2)} 年`
+            });
+          }
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+        // 当目标变量改变时重置字段
+      React.useEffect(() => { // 使用 React.useEffect
+        if (targetVariable === 'initialInvestment') setInitialInvestment('');
+        if (targetVariable === 'finalValue') setFinalValue('');
+        if (targetVariable === 'years') setYears('');
+        if (targetVariable === 'cagr') setCagr('');
+        setResult(null);
+        setError('');
+      }, [targetVariable]);
+
+
+      return (
+        <div className="w-full max-w-md bg-white bg-opacity-80 backdrop-blur-lg rounded-xl shadow-lg p-6 border border-gray-200">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-indigo-700">CAGR 计算器</h2>
+            <p className="text-gray-600 text-sm mt-1">通过提供其他三个变量来计算任何变量</p>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">我想计算：</label>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <button
+                onClick={() => setTargetVariable('initialInvestment')}
+                className={`py-2 px-3 text-xs sm:text-sm rounded-lg transition-all ${
+                  targetVariable === 'initialInvestment'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                初始投资
+              </button>
+              <button
+                onClick={() => setTargetVariable('finalValue')}
+                className={`py-2 px-3 text-xs sm:text-sm rounded-lg transition-all ${
+                  targetVariable === 'finalValue'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                最终价值
+              </button>
+              <button
+                onClick={() => setTargetVariable('years')}
+                className={`py-2 px-3 text-xs sm:text-sm rounded-lg transition-all ${
+                  targetVariable === 'years'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                年数
+              </button>
+              <button
+                onClick={() => setTargetVariable('cagr')}
+                className={`py-2 px-3 text-xs sm:text-sm rounded-lg transition-all ${
+                  targetVariable === 'cagr'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                CAGR
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {targetVariable !== 'initialInvestment' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  初始投资 (¥)
+                </label>
+                <input
+                  type="number"
+                  value={initialInvestment}
+                  onChange={(e) => setInitialInvestment(e.target.value)}
+                  placeholder="例如：10000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            )}
+
+            {targetVariable !== 'finalValue' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  最终价值 (¥)
+                </label>
+                <input
+                  type="number"
+                  value={finalValue}
+                  onChange={(e) => setFinalValue(e.target.value)}
+                  placeholder="例如：25000"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            )}
+
+            {targetVariable !== 'years' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  投资期限 (年)
+                </label>
+                <input
+                  type="number"
+                  value={years}
+                  onChange={(e) => setYears(e.target.value)}
+                  placeholder="例如：5"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            )}
+
+            {targetVariable !== 'cagr' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CAGR (%)
+                </label>
+                <input
+                  type="number"
+                  value={cagr}
+                  onChange={(e) => setCagr(e.target.value)}
+                  placeholder="例如：8.5"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                />
+              </div>
+            )}
+
+            <button
+              onClick={calculateCAGR}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-lg shadow-md transition-all flex items-center justify-center"
+            >
+              <i className="fas fa-calculator mr-2"></i>
+              计算 {targetVariable === 'initialInvestment' ? '初始投资' :
+                        targetVariable === 'finalValue' ? '最终价值' :
+                        targetVariable === 'years' ? '年数' : 'CAGR'}
+            </button>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm">
+              <i className="fas fa-exclamation-circle mr-2"></i>
+              {error}
+            </div>
+          )}
+
+          {result && (
+            <div className="mt-6 p-4 bg-indigo-50 border border-indigo-100 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-indigo-700">结果：</span>
+                <span className="text-xs text-indigo-500">
+                  <i className="far fa-lightbulb mr-1"></i>
+                  {targetVariable === 'cagr' ? '复合年增长率' :
+                  targetVariable === 'initialInvestment' ? '起始金额' :
+                  targetVariable === 'finalValue' ? '期末金额' : '时间段'}
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-indigo-800 mb-1">{result.value}</div>
+              <p className="text-sm text-gray-600">{result.explanation}</p>
+            </div>
+          )}
+
+            <div className="mt-6 text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+            <p className="font-medium mb-1">关于 CAGR:</p>
+            <ol className="list-decimal list-inside space-y-1 pl-1">
+                <li>CAGR 衡量投资在特定时间段内的年增长率。</li>
+                <li>它代表平滑后的回报率，消除了波动性的影响。</li>
+                <li>CAGR = (最终价值 / 初始投资)^(1/年数) - 1</li>
+            </ol>
+            </div>
+        </div>
+
+      );
+    };
+
+    ReactDOM.render(<CAGRCalculator />, document.getElementById('root'));
+  </script>
+</body>
+</html>
